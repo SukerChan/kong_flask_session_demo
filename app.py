@@ -1,13 +1,18 @@
+import os
+
+from dotenv import load_dotenv
 from flask import Flask, jsonify
 from flask_login import LoginManager, current_user, UserMixin, login_user, logout_user
 
 from redis_utils import get_redis
 
+load_dotenv()
+
 app = Flask(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-app.secret_key = 'abcdefg'
+app.secret_key = os.environ.get('APP_SECRET_KEY', 'kong_flask_demo')
 
 REDIS_KEY_PREFIX = 'kong_flask_demo_'
 USER_ID_KEY = REDIS_KEY_PREFIX + 'user_id'
