@@ -1,7 +1,8 @@
 import os
+from pprint import pprint
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_login import LoginManager, current_user, UserMixin, login_user, logout_user
 
 from redis_utils import get_redis
@@ -64,6 +65,8 @@ class User(UserMixin):
 
 @app.route('/')
 def hello():
+    print(request.headers)
+
     ret = {
         'msg': 'hello',
     }
@@ -72,6 +75,7 @@ def hello():
     else:
         ret['anonymous'] = False
         ret['username'] = current_user.username
+        ret['user_id'] = current_user.id
     return jsonify(ret)
 
 
@@ -85,13 +89,15 @@ def login(username):
         login_user(user)
         return jsonify({
             'msg': 'success',
-            'username': username
+            'username': username,
+            'user_id': user.id,
         })
 
     if current_user.username == username:
         return jsonify({
             'msg': 'already login',
-            'username': username
+            'username': username,
+            'user_id': current_user.id
         })
 
     return jsonify({
@@ -114,4 +120,6 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(port=6321)
+    pprint(app.config)
+
+    app.run(host='0.0.0.0', port=6321, debug=True)
