@@ -110,6 +110,14 @@ class KongAPI:
         # todo
         pass
 
+    def get_consumer_password(self, username_or_id, plugin_id):
+        # todo
+        pass
+
+    def get_consumer_key(self, username_or_id, plugin_id):
+        # todo
+        pass
+
 
 def test():
     api = KongAPI('aliyun-testing', 8001)
