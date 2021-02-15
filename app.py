@@ -4,7 +4,7 @@ import sys
 from pprint import pprint
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, redirect, url_for
 
 load_dotenv()
 
@@ -13,7 +13,7 @@ def get_config(key, default=None):
     return os.environ.get(key, default)
 
 
-APP_NAME = get_config('APP_SECRET_KEY', 'kong_flask_demo')
+APP_NAME = get_config('APP_NAME', 'kong_flask_demo')
 USER_ID_PREFIX = APP_NAME + '_'
 
 app = Flask(__name__)
@@ -149,8 +149,8 @@ def get_current_user():
     if is_anonymous():
         return User(is_anonymous=True)
 
-    username = request.headers.get('X-Consumer-Username', str)
-    custom_id = request.headers.get('X-Consumer-Custom-Id', str)
+    username = request.headers.get('X-Consumer-Username', type=str)
+    custom_id = request.headers.get('X-Consumer-Custom-Id', type=str)
     user_id = User.trans_custom_id_to_user_id(custom_id)
     return User(user_id, username)
 
@@ -159,16 +159,24 @@ def login_user(user):
     api = get_kong_api()
 
     key = api.get_consumer_key(user.username)
-    response = api.login_consumer_key(get_config('KONG_FLASK_LOGIN_URL'), key)
+    response = api.login_consumer_key(get_config('KONG_FLASK_LOGIN_URL'), key, request.headers)
 
     cookie = response.cookies.get(get_config('KONG_COOKIE_NAME'))
+    # logging.debug(response.headers)
+    # logging.debug(response.cookies)
+    # logging.debug(cookie)
 
     return cookie
 
 
 def logout_user():
-    # todo
-    pass
+    response = make_response(jsonify({
+        'msg': 'success',
+        'request_headers': request.headers.to_wsgi_list()
+    }))
+
+    response.delete_cookie(get_config('KONG_COOKIE_NAME'))
+    return response
 
 
 @app.route('/')
@@ -216,12 +224,20 @@ def login(username):
             else:
                 ret = {'msg': 'success', 'username': username, 'user_id': user.id_,
                        'request_headers': request.headers.to_wsgi_list()}
-                response = make_response(ret)
+                response = make_response(jsonify(ret))
                 response.set_cookie(get_config('KONG_COOKIE_NAME'), cookie)
                 return response
 
     ret['request_headers'] = request.headers.to_wsgi_list()
 
+    return jsonify(ret)
+
+
+@app.route('/login_success')
+def login_success():
+    user = get_current_user()
+    ret = {'msg': 'success'}
+    ret.update(user.to_json())
     return jsonify(ret)
 
 
@@ -233,10 +249,8 @@ def logout():
             'msg': 'already logout'
         }
     else:
-        logout_user()
-        ret = {
-            'msg': 'success'
-        }
+        response = logout_user()
+        return response
 
     ret['request_headers'] = request.headers.to_wsgi_list()
 

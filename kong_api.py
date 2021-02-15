@@ -128,11 +128,20 @@ class KongAPI:
         # todo
         pass
 
-    def login_consumer_key(self, login_url, key):
+    def login_consumer_key(self, login_url, key, headers):
         from utils import add_url_params
 
         url = add_url_params(login_url, {'apikey': key})
-        response = requests.get(url)
+        # headers = {
+        #     # 'Connection': 'keep-alive',
+        #     # 'Pragma': 'no-cache',
+        #     # 'Cache-Control': 'no-cache',
+        #     # 'Upgrade-Insecure-Requests': '1',
+        #     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36', \
+        #     # 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9', \
+        #     # 'Accept-Language': 'zh-CN,zh;q=0.9,zh-TW;q=0.8,en;q=0.7',
+        # }
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         return response
 
@@ -161,14 +170,16 @@ def test():
     port = int(get_config('KONG_ADMIN_PORT', 8001))
     protocol = get_config('KONG_PROTOCOL', 'http')
     api = KongAPI(host, port, protocol)
-    # ret = api.get_consumers()
+    ret = api.get_consumers()
     # ret = api.get_consumer('suker')
     # ret = api.add_consumer('chenyulong')
     # ret = api.update_consumer('chenyulong', custom_id='234')
-    ret = api.get_consumer_key('suker')
-    response = api.login_consumer_key('{}://{}:{}/{}'.format(protocol, host, 8000, get_config('APP_NAME')), ret)
-    logging.debug(response.cookies)
-    logging.debug(response.cookies.get(get_config('KONG_COOKIE_NAME')))
+    # ret = api.get_consumer_key('suker')
+    # response = api.login_consumer_key('{}://{}:{}/{}'.format(protocol, host, 8000, get_config('APP_NAME')), ret)
+    # logging.debug(response.cookies)
+    # logging.debug(response.cookies.get(get_config('KONG_COOKIE_NAME')))
+
+    logging.debug(ret)
 
 
 if __name__ == '__main__':
