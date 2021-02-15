@@ -15,6 +15,25 @@ class KongCustomer:
     def to_json(self):
         return dict(self.__customer._asdict())
 
+    @property
+    def id_(self):
+        return self.__customer.id
+
+    @property
+    def username(self):
+        return self.__customer.username
+
+    @property
+    def custom_id(self):
+        return self.__customer.custom_id
+
+    @property
+    def tags(self):
+        return self.__customer.tags
+
+    def contain_tag(self, tag):
+        return tag in self.__customer.tags
+
     @classmethod
     def from_json(cls, json_dict: dict):
         id_ = json_dict.get('id')
@@ -22,6 +41,8 @@ class KongCustomer:
         username = json_dict.get('username')
         custom_id = json_dict.get('custom_id')
         tags = json_dict.get('tags')
+        if isinstance(tags, list):
+            tags = set(tags)
 
         return cls(id_, created_at, username, custom_id, tags)
 
@@ -56,6 +77,7 @@ class KongAPI:
     def get_consumers(self):
         consumers = list()
         url = urljoin(self.base_url, 'consumers')
+        # logging.debug(url)
         while True:
             response = requests.get(url)
             response.raise_for_status()
@@ -107,26 +129,46 @@ class KongAPI:
         pass
 
     def login_consumer_key(self, login_url, key):
+        from utils import add_url_params
+
+        url = add_url_params(login_url, {'apikey': key})
+        response = requests.get(url)
+        response.raise_for_status()
+        return response
+
+    def get_consumer_password(self, username_or_id):
         # todo
         pass
 
-    def get_consumer_password(self, username_or_id, plugin_id):
-        # todo
-        pass
+    def get_consumer_key(self, username_or_id):
+        if not username_or_id:
+            raise ValueError('Please input username or consumer id')
 
-    def get_consumer_key(self, username_or_id, plugin_id):
-        # todo
-        pass
+        url = urljoin(self.base_url, 'consumers/{}/key-auth'.format(username_or_id))
+        response = requests.get(url)
+        response.raise_for_status()
+
+        # logging.debug(response.json())
+        ret = response.json()
+        if ret['data']:
+            return ret['data'][0].get('key')
 
 
 def test():
-    api = KongAPI('aliyun-testing', 8001)
-    ret = api.get_consumers()
+    from app import get_config
+
+    host = get_config('KONG_HOST')
+    port = int(get_config('KONG_ADMIN_PORT', 8001))
+    protocol = get_config('KONG_PROTOCOL', 'http')
+    api = KongAPI(host, port, protocol)
+    # ret = api.get_consumers()
     # ret = api.get_consumer('suker')
     # ret = api.add_consumer('chenyulong')
     # ret = api.update_consumer('chenyulong', custom_id='234')
-
-    print(ret)
+    ret = api.get_consumer_key('suker')
+    response = api.login_consumer_key('{}://{}:{}/{}'.format(protocol, host, 8000, get_config('APP_NAME')), ret)
+    logging.debug(response.cookies)
+    logging.debug(response.cookies.get(get_config('KONG_COOKIE_NAME')))
 
 
 if __name__ == '__main__':
