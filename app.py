@@ -233,14 +233,6 @@ def login(username):
     return jsonify(ret)
 
 
-@app.route('/login_success')
-def login_success():
-    user = get_current_user()
-    ret = {'msg': 'success'}
-    ret.update(user.to_json())
-    return jsonify(ret)
-
-
 @app.route('/logout')
 def logout():
     current_user = get_current_user()
